@@ -1,0 +1,48 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // We are telling Prisma we will use PostgreSQL
+  url      = env("DATABASE_URL") // It will fetch the password from the .env file
+}
+
+// 1. We create an Enum to define the two roles in our MVP
+enum Role {
+  WOMAN
+  SPONSOR
+}
+
+// 2. The User Table
+model User {
+  id             String    @id @default(uuid()) // Unique ID generated automatically
+  email          String    @unique // No two users can have the same email
+  passwordHash   String    // We store the hashed password, never the plain text!
+  firstName      String
+  lastName       String
+  role           Role      @default(WOMAN) // By default, someone registering is a WOMAN
+  bio            String?   @db.Text // The ? means this field is optional
+  
+  // This is a relation! It says "A User (Sponsor) can have many Opportunities"
+  opportunities  Opportunity[] 
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+// 3. The Opportunity Table
+model Opportunity {
+  id               String       @id @default(uuid())
+  title            String
+  description      String       @db.Text
+  
+  // These two lines create the relationship back to the User who created it
+  sponsorId        String
+  sponsor          User         @relation(fields: [sponsorId], references: [id])
+  
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+}
