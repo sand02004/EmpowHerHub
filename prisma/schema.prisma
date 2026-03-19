@@ -7,42 +7,277 @@ generator client {
 
 datasource db {
   provider = "postgresql" // We are telling Prisma we will use PostgreSQL
-  url      = env("DATABASE_URL") // It will fetch the password from the .env file
 }
 
-// 1. We create an Enum to define the two roles in our MVP
+// ============================================================
+// ENUMS
+// ============================================================
+
 enum Role {
   WOMAN
+  MENTOR
   SPONSOR
+  ADMIN
 }
 
-// 2. The User Table
+enum AccountStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  IN_REVIEW
+}
+
+enum MentorshipType {
+  ONLINE
+  PHYSICAL
+  BOTH
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// ============================================================
+// CORE USER MODEL
+// ============================================================
+
 model User {
-  id             String    @id @default(uuid()) // Unique ID generated automatically
-  email          String    @unique // No two users can have the same email
-  passwordHash   String    // We store the hashed password, never the plain text!
-  firstName      String
-  lastName       String
-  role           Role      @default(WOMAN) // By default, someone registering is a WOMAN
-  bio            String?   @db.Text // The ? means this field is optional
+  id            String   @id @default(uuid())
+  email         String   @unique
+  passwordHash  String
+  firstName     String
+  lastName      String
+  phoneNumber   String?
+  role          Role     @default(WOMAN)
+  accountStatus AccountStatus @default(PENDING) // Controlled by Admin
   
-  // This is a relation! It says "A User (Sponsor) can have many Opportunities"
-  opportunities  Opportunity[] 
+  // Relations
+  womenProfile   WomenProfile?
+  mentorProfile  MentorProfile?
+  sponsorProfile SponsorProfile?
 
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  userTests      UserTest[]
+  opportunities  Opportunity[] 
+  
+  mentorshipApplicationsAsMentee MentorshipApplication[] @relation("MenteeApplications")
+  mentorshipApplicationsAsMentor MentorshipApplication[] @relation("MentorApplications")
+  opportunityApplications        OpportunityApplication[]
+
+  sentMessages     Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
-// 3. The Opportunity Table
+// ============================================================
+// ROLE PROFILES
+// ============================================================
+
+model WomenProfile {
+  id                    String   @id @default(uuid())
+  userId                String   @unique
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  skills                String[]
+
+  dateOfBirth           DateTime?
+  profileImage          String?
+  personalDetails       String?  @db.Text
+
+  country               String?
+  city                  String?
+  educationLevel        String?
+  areaOfInterest        String?  // Technology, Business, Leadership
+
+  careerGoals           String?  @db.Text
+  skillsToDevelop       String[]
+
+  preferredMentorGender String?
+  nationalIdUrl         String?
+}
+
+model MentorProfile {
+  id                    String   @id @default(uuid())
+  userId                String   @unique
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  professionalBackgroundDescription String  @db.Text
+  mentorshipCertificateUrl          String?
+  yearsExperience                   Int
+
+  jobTitle              String?
+  company               String?
+  industry              String?
+  education             String?
+
+  expertiseAreas        String[]
+  mentorshipTopics      String[]
+
+  mentorshipExperience  String?  @db.Text
+  availableHours        String?
+
+  profileImage          String?
+  nationalIdUrl         String?
+
+  mentorshipType        MentorshipType?
+}
+
+model SponsorProfile {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  organizationName  String
+  industry          String?
+  website           String?
+  description       String?  @db.Text
+  logoUrl           String?
+}
+
+// ============================================================
+// SKILLS ASSESSMENT SYSTEM
+// ============================================================
+
+model Test {
+  id           String     @id @default(uuid())
+  title        String
+  description  String?    @db.Text
+  passingScore Int        @default(60)
+
+  questions    Question[]
+  userTests    UserTest[]
+
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model Question {
+  id            String        @id @default(uuid())
+  testId        String
+  test          Test          @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  content       String        @db.Text
+
+  answerOptions AnswerOption[]
+  userAnswers   UserAnswer[]
+}
+
+model AnswerOption {
+  id           String     @id @default(uuid())
+  questionId   String
+  question     Question   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  content      String
+  isCorrect    Boolean    @default(false)
+
+  userAnswers  UserAnswer[]
+}
+
+model UserTest {
+  id           String     @id @default(uuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  testId       String
+  test         Test       @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  score        Float?
+  passed       Boolean?
+  completedAt  DateTime?
+
+  answers      UserAnswer[]
+
+  @@unique([userId, testId])
+}
+
+model UserAnswer {
+  id             String        @id @default(uuid())
+
+  userTestId     String
+  userTest       UserTest      @relation(fields: [userTestId], references: [id], onDelete: Cascade)
+
+  questionId     String
+  question       Question      @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  answerOptionId String
+  answerOption   AnswerOption  @relation(fields: [answerOptionId], references: [id], onDelete: Cascade)
+}
+
+// ============================================================
+// MENTORSHIP & OPPORTUNITIES
+// ============================================================
+
+model MentorshipApplication {
+  id          String   @id @default(uuid())
+  
+  menteeId    String
+  mentee      User     @relation("MenteeApplications", fields: [menteeId], references: [id])
+  
+  mentorId    String
+  mentor      User     @relation("MentorApplications", fields: [mentorId], references: [id])
+  
+  status      ApplicationStatus @default(PENDING)
+  message     String?  @db.Text
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 model Opportunity {
-  id               String       @id @default(uuid())
-  title            String
-  description      String       @db.Text
+  id          String   @id @default(uuid())
   
-  // These two lines create the relationship back to the User who created it
-  sponsorId        String
-  sponsor          User         @relation(fields: [sponsorId], references: [id])
+  sponsorId   String
+  sponsor     User     @relation(fields: [sponsorId], references: [id])
   
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  title       String
+  description String   @db.Text
+  type        String   // Internship, Scholarship, Training, Grant
+  location    String?
+  isRemote    Boolean  @default(false)
+  requirements String? @db.Text
+  deadline    DateTime?
+  
+  applications OpportunityApplication[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model OpportunityApplication {
+  id            String   @id @default(uuid())
+  
+  opportunityId String
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  
+  applicantId   String
+  applicant     User     @relation(fields: [applicantId], references: [id])
+  
+  status        ApplicationStatus @default(PENDING)
+  coverLetter   String?  @db.Text
+  resumeUrl     String?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// ============================================================
+// MESSAGING CORE
+// ============================================================
+
+model Message {
+  id          String   @id @default(uuid())
+  
+  senderId    String
+  sender      User     @relation("SentMessages", fields: [senderId], references: [id])
+  
+  receiverId  String
+  receiver    User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  
+  content     String   @db.Text
+  isRead      Boolean  @default(false)
+  
+  createdAt   DateTime @default(now())
 }
