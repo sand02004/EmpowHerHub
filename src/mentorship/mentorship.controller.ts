@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param } from '@nestjs/common';
 import { MentorshipService } from './mentorship.service';
 import { Prisma, ApplicationStatus } from '@prisma/client';
 import { ApiTags, ApiOperation, ApiBody } from '@nestjs/swagger';
+import { ApplyMentorshipDto, UpdateMentorshipStatusDto } from './mentorship.dto';
 
 @ApiTags('mentorship')
 @Controller('mentorship')
@@ -9,18 +10,9 @@ export class MentorshipController {
   constructor(private readonly mentorshipService: MentorshipService) {}
 
   @ApiOperation({ summary: 'Apply to be mentored by someone' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        mentorId: { type: 'string' },
-        menteeId: { type: 'string' },
-        message: { type: 'string', example: 'I admire your work and would love mentorship!' },
-      }
-    }
-  })
+  @ApiBody({ type: ApplyMentorshipDto })
   @Post('apply')
-  apply(@Body() data: Prisma.MentorshipApplicationUncheckedCreateInput) {
+  apply(@Body() data: ApplyMentorshipDto) {
     return this.mentorshipService.applyForMentorship(data);
   }
 
@@ -31,14 +23,9 @@ export class MentorshipController {
   }
 
   @ApiOperation({ summary: 'Approve or Reject a mentorship request' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: { status: { type: 'string', example: 'APPROVED' } }
-    }
-  })
+  @ApiBody({ type: UpdateMentorshipStatusDto })
   @Patch(':id/status')
-  updateStatus(@Param('id') id: string, @Body('status') status: ApplicationStatus) {
-    return this.mentorshipService.updateStatus(id, status);
+  updateStatus(@Param('id') id: string, @Body() body: UpdateMentorshipStatusDto) {
+    return this.mentorshipService.updateStatus(id, body.status);
   }
 }

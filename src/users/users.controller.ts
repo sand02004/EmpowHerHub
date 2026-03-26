@@ -2,6 +2,7 @@ import { Controller, Get, Body, Patch, Param, Delete, NotFoundException } from '
 import { UsersService } from './users.service';
 import { Prisma } from '@prisma/client';
 import { ApiTags, ApiOperation, ApiParam, ApiBody } from '@nestjs/swagger';
+import { UpdateUserDto } from './users.dto';
 
 @ApiTags('users') // This puts it in a neat "users" section in Swagger UI!
 @Controller('users')
@@ -27,17 +28,9 @@ export class UsersController {
 
   @ApiOperation({ summary: 'Update a user by ID' })
   @ApiParam({ name: 'id', description: 'The unique ID of the user to update' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        firstName: { type: 'string', example: 'New Name' },
-        phoneNumber: { type: 'string', example: '+250123456789' }
-      }
-    }
-  })
+  @ApiBody({ type: UpdateUserDto })
   @Patch(':id')
-  update(@Param('id') id: string, @Body() data: Prisma.UserUpdateInput) {
+  update(@Param('id') id: string, @Body() data: UpdateUserDto) {
     return this.usersService.update(id, data);
   }
 

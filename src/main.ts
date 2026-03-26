@@ -16,16 +16,16 @@ async function bootstrap() {
     
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
-  // ---------------------
+  
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
   
   // Adding clear console logs so you know exactly where everything is running!
-  console.log(`\n======================================================`);
-  console.log(`🚀 Application is successfully running!`);
-  console.log(`🔗 Local server URL: http://localhost:${port}`);
-  console.log(`📚 Swagger Dashboard: http://localhost:${port}/api`);
-  console.log(`======================================================\n`);
+  console.log(`\n`);
+  console.log(`Application is successfully running!`);
+  console.log(`Local server URL: http://localhost:${port}`);
+  console.log(`Swagger Dashboard: http://localhost:${port}/api`);
+  console.log(`\n`);
 }
 bootstrap();

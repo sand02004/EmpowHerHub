@@ -1,61 +1,113 @@
 import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { Prisma } from '@prisma/client';
+import { Role } from '@prisma/client';
+import { RegisterWomanDto, RegisterMentorDto, RegisterSponsorDto } from './auth.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private usersService: UsersService,
+    private prisma: PrismaService,
     private jwtService: JwtService
   ) {}
 
-  async register(data: Prisma.UserCreateInput) {
-    // 1. Check if the user already exists
-    const existingUser = await this.usersService.findByEmail(data.email);
-    if (existingUser) {
-      throw new ConflictException('User with this email already exists');
-    }
+  private async hashPassword(password: string): Promise<string> {
+    return bcrypt.hash(password, 10);
+  }
 
-    // 2. Hash the password before saving
-    // (Note: your schema calls the field 'passwordHash', so we expect the plain text password to be sent there for now)
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(data.passwordHash, saltRounds);
+  private async ensureUniqueEmail(email: string) {
+    const existing = await this.usersService.findByEmail(email);
+    if (existing) throw new ConflictException('User with this email already exists');
+  }
 
-    // 3. Create the user in the database via our UsersService
-    const user = await this.usersService.createUser({
-      ...data,
-      passwordHash: hashedPassword, // Override plain password with the hashed one
-    });
-
-    // 4. Generate a JWT token for them immediately after signing up
+  private async generateAuthResponse(user: any) {
     const payload = { sub: user.id, email: user.email, role: user.role };
     return {
       access_token: await this.jwtService.signAsync(payload),
-      user: { id: user.id, email: user.email, role: user.role, firstName: user.firstName }
+      user: { id: user.id, email: user.email, role: user.role, firstName: user.firstName, status: user.accountStatus }
     };
   }
 
+  async registerWoman(data: RegisterWomanDto) {
+    await this.ensureUniqueEmail(data.email);
+    const passwordHash = await this.hashPassword(data.passwordHash);
+
+    const user = await this.prisma.client.user.create({
+      data: {
+        email: data.email,
+        passwordHash,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phoneNumber: data.phoneNumber,
+        role: Role.WOMAN,
+        womenProfile: {
+          create: {
+            skills: data.skills,
+          }
+        }
+      }
+    });
+
+    return this.generateAuthResponse(user);
+  }
+
+  async registerMentor(data: RegisterMentorDto) {
+    await this.ensureUniqueEmail(data.email);
+    const passwordHash = await this.hashPassword(data.passwordHash);
+
+    const user = await this.prisma.client.user.create({
+      data: {
+        email: data.email,
+        passwordHash,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phoneNumber: data.phoneNumber,
+        role: Role.MENTOR,
+        mentorProfile: {
+          create: {
+            professionalBackground: data.professionalBackground,
+            yearsExperience: data.yearsExperience,
+          }
+        }
+      }
+    });
+
+    return this.generateAuthResponse(user);
+  }
+
+  async registerSponsor(data: RegisterSponsorDto) {
+    await this.ensureUniqueEmail(data.email);
+    const passwordHash = await this.hashPassword(data.passwordHash);
+
+    const user = await this.prisma.client.user.create({
+      data: {
+        email: data.email,
+        passwordHash,
+        firstName: 'Sponsor',
+        lastName: 'Rep',
+        role: Role.SPONSOR,
+        sponsorProfile: {
+          create: {
+            organizationName: data.organizationName,
+            description: data.description,
+          }
+        }
+      }
+    });
+
+    return this.generateAuthResponse(user);
+  }
+
   async login(email: string, pass: string) {
-    // 1. Find the user
     const user = await this.usersService.findByEmail(email);
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
+    if (!user) throw new UnauthorizedException('Invalid credentials');
 
-    // 2. Check the password
     const isPasswordValid = await bcrypt.compare(pass, user.passwordHash);
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
+    if (!isPasswordValid) throw new UnauthorizedException('Invalid credentials');
 
-    // 3. Generate a JWT token
-    // 'sub' is the standard JWT naming convention for the Subject (User ID)
-    const payload = { sub: user.id, email: user.email, role: user.role };
-    return {
-      access_token: await this.jwtService.signAsync(payload),
-      user: { id: user.id, email: user.email, role: user.role, firstName: user.firstName }
-    };
+    return this.generateAuthResponse(user);
   }
 }

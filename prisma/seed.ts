@@ -1,73 +1,107 @@
-import 'dotenv/config';
-import prisma from './client';
+import { Role, AccountStatus, MentorshipType } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { prisma } from './client';
 
 async function main() {
-  console.log('Seeding the database...');
+  console.log('Starting execution of role seeders...');
 
-  // 1. Create the Super Admin Account
-  const hashedPassword = await bcrypt.hash('admin123', 10);
-  
-  const admin = await prisma.user.upsert({
+  // Using a universally simple password for testing the UI flow manually
+  const plainPassword = 'password123';
+  const saltRounds = 10;
+  const passwordHash = await bcrypt.hash(plainPassword, saltRounds);
+
+  console.log('1. Upserting Admin Role...');
+  await prisma.user.upsert({
     where: { email: 'admin@empowher.com' },
     update: {},
     create: {
       email: 'admin@empowher.com',
-      firstName: 'Super',
+      firstName: 'System',
       lastName: 'Admin',
-      passwordHash: hashedPassword,
-      role: 'ADMIN',
-      accountStatus: 'APPROVED', // Admin is auto-approved!
-    },
+      passwordHash,
+      role: Role.ADMIN,
+      accountStatus: AccountStatus.APPROVED,
+      adminProfile: {
+        create: {
+          department: 'Platform Operation'
+        }
+      }
+    }
   });
-  console.log('Admin user created:', admin.email);
 
-  // 2. Create the default Skills Assessment Test
-  const existingTest = await prisma.test.findFirst();
-  
-  if (!existingTest) {
-    const defaultTest = await prisma.test.create({
-      data: {
-        title: 'Basic Tech Skills Assessment',
-        description: 'A mandatory test for new women joining the platform.',
-        passingScore: 60,
-        questions: {
-          create: [
-            {
-              content: 'What does HTML stand for?',
-              answerOptions: {
-                create: [
-                  { content: 'Hyper Text Markup Language', isCorrect: true },
-                  { content: 'Hyperlinks and Text Markup Language', isCorrect: false },
-                  { content: 'Home Tool Markup Language', isCorrect: false },
-                ],
-              },
-            },
-            {
-              content: 'Which language is used for styling web pages?',
-              answerOptions: {
-                create: [
-                  { content: 'HTML', isCorrect: false },
-                  { content: 'CSS', isCorrect: true },
-                  { content: 'Python', isCorrect: false },
-                ],
-              },
-            },
-          ],
-        },
-      },
-    });
-    console.log('Default Skills Test created:', defaultTest.title);
-  } else {
-    console.log('Test already exists. Skipping...');
-  }
+  console.log('2. Upserting Woman (Mentee) Role...');
+  await prisma.user.upsert({
+    where: { email: 'woman@empowher.com' },
+    update: {},
+    create: {
+      email: 'woman@empowher.com',
+      firstName: 'Ada',
+      lastName: 'Lovelace',
+      passwordHash,
+      role: Role.WOMAN,
+      accountStatus: AccountStatus.APPROVED, // Pre-approved for instant testing
+      womenProfile: {
+        create: {
+          skills: ['JavaScript', 'React', 'TypeScript'],
+          careerGoals: 'To become a highly skilled Full-Stack Developer passing all technical exams.'
+        }
+      }
+    }
+  });
 
-  console.log('Database seeding complete!');
+  console.log('3. Upserting Mentor Role...');
+  await prisma.user.upsert({
+    where: { email: 'mentor@empowher.com' },
+    update: {},
+    create: {
+      email: 'mentor@empowher.com',
+      firstName: 'Grace',
+      lastName: 'Hopper',
+      passwordHash,
+      role: Role.MENTOR,
+      accountStatus: AccountStatus.APPROVED,
+      mentorProfile: {
+        create: {
+          jobTitle: 'Senior Tech Lead',
+          company: 'Tech Corp Innovation',
+          yearsExperience: 10,
+          professionalBackground: 'Mentoring junior developers and managing massive scale system architectures for 5 years.',
+          mentorshipType: MentorshipType.ONLINE,
+          expertiseAreas: ['System Architecture', 'Backend', 'Leadership'],
+        }
+      }
+    }
+  });
+
+  console.log('4. Upserting Sponsor Role...');
+  await prisma.user.upsert({
+    where: { email: 'sponsor@empowher.com' },
+    update: {},
+    create: {
+      email: 'sponsor@empowher.com',
+      firstName: 'Emma',
+      lastName: 'Watson',
+      passwordHash,
+      role: Role.SPONSOR,
+      accountStatus: AccountStatus.APPROVED,
+      sponsorProfile: {
+        create: {
+          organizationName: 'Women In Tech Foundation',
+          description: 'A global foundation aiming to radically bridge the gender gap in technological ecosystems.',
+          industry: 'Non-Profit / Education'
+        }
+      }
+    }
+  });
+
+  console.log('✅ Database Seeding Complete! Roles created exactly as requested.');
+  console.log(`Universal Test Login Password: ${plainPassword}`);
 }
 
 main()
   .catch((e) => {
-    console.error('Error during seeding:', e);
+    console.error('❌ SEEDING ERROR:');
+    console.error(e);
     process.exit(1);
   })
   .finally(async () => {
