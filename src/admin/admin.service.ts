@@ -8,7 +8,9 @@ export class AdminService {
 
   async getPendingAccounts() {
     return this.prisma.client.user.findMany({
-      where: { accountStatus: AccountStatus.PENDING },
+      where: {
+        accountStatus: { in: [AccountStatus.PENDING, AccountStatus.IN_REVIEW] }
+      },
       select: {
         id: true,
         email: true,

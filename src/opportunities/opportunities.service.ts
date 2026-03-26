@@ -33,4 +33,30 @@ export class OpportunitiesService {
   async apply(data: Prisma.OpportunityApplicationUncheckedCreateInput): Promise<OpportunityApplication> {
     return this.prisma.client.opportunityApplication.create({ data });
   }
+
+  // Get applicants for an opportunity
+  async getApplications(opportunityId: string): Promise<any[]> {
+    return this.prisma.client.opportunityApplication.findMany({
+      where: { opportunityId },
+      include: { applicant: { select: { firstName: true, lastName: true } } },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+
+  // Get applications for a specific user
+  async getUserApplications(userId: string): Promise<any[]> {
+    return this.prisma.client.opportunityApplication.findMany({
+      where: { applicantId: userId },
+      include: { opportunity: true },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+
+  // Accept or Reject an application
+  async updateApplicationStatus(id: string, status: any): Promise<any> {
+    return this.prisma.client.opportunityApplication.update({
+      where: { id },
+      data: { status }
+    });
+  }
 }

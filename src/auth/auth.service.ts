@@ -24,10 +24,18 @@ export class AuthService {
   }
 
   private async generateAuthResponse(user: any) {
-    const payload = { sub: user.id, email: user.email, role: user.role };
+    let passedAssessment = true;
+    if (user.role === Role.WOMAN) {
+      const passedTest = await this.prisma.client.userTest.findFirst({
+        where: { userId: user.id, passed: true }
+      });
+      passedAssessment = !!passedTest;
+    }
+
+    const payload = { sub: user.id, email: user.email, role: user.role, status: user.accountStatus, assessmentPassed: passedAssessment };
     return {
       access_token: await this.jwtService.signAsync(payload),
-      user: { id: user.id, email: user.email, role: user.role, firstName: user.firstName, status: user.accountStatus }
+      user: { id: user.id, email: user.email, role: user.role, firstName: user.firstName, status: user.accountStatus, assessmentPassed: passedAssessment }
     };
   }
 
@@ -93,6 +101,7 @@ export class AuthService {
           create: {
             organizationName: data.organizationName,
             description: data.description,
+            website: data.website,
           }
         }
       }

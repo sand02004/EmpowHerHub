@@ -16,10 +16,41 @@ export class MentorshipController {
     return this.mentorshipService.applyForMentorship(data);
   }
 
+  @ApiOperation({ summary: 'Get all mentors available for mentorship' })
+  @Get('mentors')
+  getMentors() {
+    return this.mentorshipService.getAllMentors();
+  }
+
+  @ApiOperation({ summary: 'Get all mentorship applications (Admins)' })
+  @Get()
+  getAllApplications() {
+    // Requires a quick inline prisma access for Admin mapping
+    return this.mentorshipService['prisma'].client.mentorshipApplication.findMany({
+      include: {
+        mentor: { select: { firstName: true, lastName: true } },
+        mentee: { select: { firstName: true, lastName: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+
+  @ApiOperation({ summary: 'Get all requests a mentee has sent' })
+  @Get('mentee/:menteeId')
+  getMenteeRequests(@Param('menteeId') menteeId: string) {
+    return this.mentorshipService.getMenteeApplications(menteeId);
+  }
+
   @ApiOperation({ summary: 'Get all requests a mentor has received' })
-  @Get('mentor/:mentorId')
+  @Get('mentor/:mentorId/requests')
   getMentorRequests(@Param('mentorId') mentorId: string) {
     return this.mentorshipService.getMentorApplications(mentorId);
+  }
+
+  @ApiOperation({ summary: 'Get all active mentees for a mentor' })
+  @Get('mentor/:mentorId/mentees')
+  getMentorMentees(@Param('mentorId') mentorId: string) {
+    return this.mentorshipService.getMentorMentees(mentorId);
   }
 
   @ApiOperation({ summary: 'Approve or Reject a mentorship request' })

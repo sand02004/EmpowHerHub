@@ -62,4 +62,24 @@ export class UsersService {
       where: { id },
     });
   }
+
+  // Complete profile by updating role-specific tables and pushing status to IN_REVIEW
+  async completeProfile(id: string, role: string, payload: any): Promise<User> {
+    const data: any = {};
+    if (role === 'WOMAN') {
+      data.womenProfile = { update: { ...payload } };
+    } else if (role === 'MENTOR') {
+      data.mentorProfile = { update: { ...payload } };
+    } else if (role === 'SPONSOR') {
+      data.sponsorProfile = { update: { ...payload } };
+    }
+    
+    return this.prisma.client.user.update({
+      where: { id },
+      data: {
+        ...data,
+        accountStatus: 'IN_REVIEW'
+      }
+    });
+  }
 }

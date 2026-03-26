@@ -8,9 +8,10 @@ import { OpportunitiesModule } from './opportunities/opportunities.module';
 import { MentorshipModule } from './mentorship/mentorship.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { MessagesModule } from './messages/messages.module';
+import { TestsModule } from './tests/tests.module';
 
 @Module({
-  imports: [PrismaModule, UsersModule, AuthModule, OpportunitiesModule, MentorshipModule, UploadsModule, MessagesModule],
+  imports: [PrismaModule, UsersModule, AuthModule, OpportunitiesModule, MentorshipModule, UploadsModule, MessagesModule, TestsModule],
   controllers: [AppController],
   providers: [AppService],
 })

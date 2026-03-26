@@ -4,12 +4,15 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.enableCors();
+  app.setGlobalPrefix('api/v1');
 
   // --- SWAGGER SETUP ---
   const config = new DocumentBuilder()
     .setTitle('EmpowHerHub API')
     .setDescription('The API documentation and testing hub for EmpowHerHub')
     .setVersion('1.0')
+    .addBearerAuth()
     .addTag('auth')
     .addTag('users')
     .build();

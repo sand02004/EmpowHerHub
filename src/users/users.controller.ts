@@ -34,6 +34,12 @@ export class UsersController {
     return this.usersService.update(id, data);
   }
 
+  @ApiOperation({ summary: 'Complete a user profile with role-specific data' })
+  @Patch(':id/complete-profile')
+  completeProfile(@Param('id') id: string, @Body() body: { role: string; payload: any }) {
+    return this.usersService.completeProfile(id, body.role, body.payload);
+  }
+
   @ApiOperation({ summary: 'Delete a user by ID' })
   @ApiParam({ name: 'id', description: 'The unique ID of the user to delete' })
   @Delete(':id')

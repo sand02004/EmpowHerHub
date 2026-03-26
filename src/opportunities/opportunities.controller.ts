@@ -34,4 +34,22 @@ export class OpportunitiesController {
   apply(@Body() data: ApplyOpportunityDto) {
     return this.opportunitiesService.apply(data);
   }
+
+  @ApiOperation({ summary: 'Get applicants for an opportunity' })
+  @Get(':id/applications')
+  getApplications(@Param('id') id: string) {
+    return this.opportunitiesService.getApplications(id);
+  }
+
+  @ApiOperation({ summary: 'Get applications submitted by a user' })
+  @Get('user-applications/:userId')
+  getUserApplications(@Param('userId') userId: string) {
+    return this.opportunitiesService.getUserApplications(userId);
+  }
+
+  @ApiOperation({ summary: 'Update application status (ACCEPT/REJECT)' })
+  @Post('applications/:id/status')
+  updateApplicationStatus(@Param('id') id: string, @Body('status') status: string) {
+    return this.opportunitiesService.updateApplicationStatus(id, status);
+  }
 }

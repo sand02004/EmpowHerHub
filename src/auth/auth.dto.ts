@@ -11,17 +11,17 @@ export class BaseRegisterDto {
   @MinLength(6)
   passwordHash: string;
 
-  @ApiProperty({ example: 'Ada' })
+  @ApiProperty({ example: '' })
   @IsString()
   @IsNotEmpty()
   firstName: string;
 
-  @ApiProperty({ example: 'Lovelace' })
+  @ApiProperty({ example: '' })
   @IsString()
   @IsNotEmpty()
   lastName: string;
 
-  @ApiProperty({ example: '+250780000000', required: false })
+  @ApiProperty({ example: '+250791164161', required: false })
   @IsString()
   @IsOptional()
   phoneNumber?: string;
@@ -63,6 +63,11 @@ export class RegisterSponsorDto {
   @IsString()
   @IsNotEmpty()
   description: string;
+
+  @ApiProperty({ example: 'https://example.com' })
+  @IsString()
+  @IsNotEmpty()
+  website: string;
 }
 
 export class LoginDto {
