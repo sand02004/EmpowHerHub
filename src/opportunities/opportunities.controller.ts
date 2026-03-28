@@ -1,6 +1,5 @@
 import { Controller, Get, Post, Body, Param } from '@nestjs/common';
 import { OpportunitiesService } from './opportunities.service';
-import { Prisma } from '@prisma/client';
 import { ApiTags, ApiOperation, ApiBody } from '@nestjs/swagger';
 import { CreateOpportunityDto, ApplyOpportunityDto } from './opportunities.dto';
 

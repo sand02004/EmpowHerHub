@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, UseGuards, Request } from '@nestjs/common';
 import { MentorshipService } from './mentorship.service';
-import { ApplicationStatus } from '@prisma/client';
+import { ApplicationStatus } from '../common/prisma-types';
 import { ApiTags, ApiOperation, ApiBody } from '@nestjs/swagger';
 import { ApplyMentorshipDto, UpdateMentorshipStatusDto, CreateMentorshipProgramDto } from './mentorship.dto';
 

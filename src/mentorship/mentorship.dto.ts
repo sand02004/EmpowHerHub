@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ApplicationStatus } from '@prisma/client';
+import { ApplicationStatus } from '../common/prisma-types';
 
 export class ApplyMentorshipDto {
   @ApiPropertyOptional({ description: 'ID of the mentorship program' })
