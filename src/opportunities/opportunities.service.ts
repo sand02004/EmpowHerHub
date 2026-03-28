@@ -49,7 +49,7 @@ export class OpportunitiesService {
   async apply(data: any): Promise<any> {
     const id = crypto.randomUUID();
     await this.prisma.client.$executeRaw`
-      INSERT INTO "OpportunityApplication" (id, "opportunityId", "applicantId", "coverLetter", status, "createdAt")
+      INSERT INTO "OpportunityApplication" (id, "opportunityId", "userId", "coverLetter", status, "createdAt")
       VALUES (${id}, ${data.opportunityId}, ${data.applicantId}, ${data.coverLetter ?? null}, 'PENDING'::"ApplicationStatus", NOW())
     `;
     const rows: any[] = await this.prisma.client.$queryRaw`SELECT * FROM "OpportunityApplication" WHERE id = ${id}`;
@@ -60,7 +60,7 @@ export class OpportunitiesService {
     return this.prisma.client.$queryRaw`
       SELECT a.*, u."firstName" as "applicantFirstName", u."lastName" as "applicantLastName"
       FROM "OpportunityApplication" a
-      JOIN "User" u ON a."applicantId" = u.id
+      JOIN "User" u ON a."userId" = u.id
       WHERE a."opportunityId" = ${opportunityId}
       ORDER BY a."createdAt" DESC
     `;
@@ -71,7 +71,7 @@ export class OpportunitiesService {
       SELECT a.*, o.title as "opportunityTitle", o.type as "opportunityType"
       FROM "OpportunityApplication" a
       JOIN "Opportunity" o ON a."opportunityId" = o.id
-      WHERE a."applicantId" = ${userId}
+      WHERE a."userId" = ${userId}
       ORDER BY a."createdAt" DESC
     `;
   }
@@ -81,7 +81,7 @@ export class OpportunitiesService {
       SELECT a.*, o.title as "opportunityTitle", u.id as "applicantId", u."firstName" as "applicantFirstName", u."lastName" as "applicantLastName"
       FROM "OpportunityApplication" a
       JOIN "Opportunity" o ON a."opportunityId" = o.id
-      JOIN "User" u ON a."applicantId" = u.id
+      JOIN "User" u ON a."userId" = u.id
       WHERE o."sponsorId" = ${sponsorId}
       ORDER BY a."createdAt" DESC
     `;

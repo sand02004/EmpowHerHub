@@ -15,6 +15,20 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
+  @ApiOperation({ summary: 'Complete a user profile with role-specific data' })
+  @Patch(':id/complete-profile')
+  completeProfile(@Param('id') id: string, @Body() body: { role: string; payload: any }) {
+    return this.usersService.completeProfile(id, body.role, body.payload);
+  }
+
+  @ApiOperation({ summary: 'Get notification badge count for a user' })
+  @ApiParam({ name: 'id', description: 'The unique ID of the user' })
+  @ApiParam({ name: 'role', description: 'The role of the user' })
+  @Get(':id/notifications/:role')
+  getNotificationBadge(@Param('id') id: string, @Param('role') role: string) {
+    return this.usersService.getNotificationBadge(id, role);
+  }
+
   @ApiOperation({ summary: 'Get a specific user by their Unique ID' })
   @ApiParam({ name: 'id', description: 'The unique ID of the user' })
   @Get(':id')
@@ -32,12 +46,6 @@ export class UsersController {
   @Patch(':id')
   update(@Param('id') id: string, @Body() data: UpdateUserDto) {
     return this.usersService.update(id, data);
-  }
-
-  @ApiOperation({ summary: 'Complete a user profile with role-specific data' })
-  @Patch(':id/complete-profile')
-  completeProfile(@Param('id') id: string, @Body() body: { role: string; payload: any }) {
-    return this.usersService.completeProfile(id, body.role, body.payload);
   }
 
   @ApiOperation({ summary: 'Delete a user by ID' })

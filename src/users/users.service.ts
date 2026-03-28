@@ -143,4 +143,44 @@ export class UsersService {
     await this.prisma.client.$executeRaw`UPDATE "User" SET "accountStatus" = 'IN_REVIEW'::"AccountStatus", "updatedAt" = NOW() WHERE id = ${id}`;
     return this.findById(id);
   }
+
+  // Get notification badge count
+  async getNotificationBadge(id: string, role: string): Promise<number> {
+    let count = 0;
+    
+    // Unread messages for ALL users
+    const messages: any[] = await this.prisma.client.$queryRaw`
+      SELECT COUNT(*)::int as count 
+      FROM "Message" m 
+      JOIN "Conversation" c ON m."conversationId" = c.id
+      WHERE (c."user1Id" = ${id} OR c."user2Id" = ${id})
+        AND m."senderId" != ${id}
+        AND m."isRead" = false
+    `;
+    count += (messages[0]?.count || 0);
+
+    const normalizedRole = role.toLowerCase();
+    
+    if (normalizedRole === 'admin') {
+      const pending: any[] = await this.prisma.client.$queryRaw`
+        SELECT COUNT(*)::int as count FROM "User" WHERE "accountStatus" = 'PENDING'::"AccountStatus" OR "accountStatus" = 'IN_REVIEW'::"AccountStatus"
+      `;
+      count += (pending[0]?.count || 0);
+    } else if (normalizedRole === 'mentor') {
+      const reqs: any[] = await this.prisma.client.$queryRaw`
+        SELECT COUNT(*)::int as count FROM "MentorshipApplication" WHERE "mentorId" = ${id} AND status = 'PENDING'::"MentorshipStatus"
+      `;
+      count += (reqs[0]?.count || 0);
+    } else if (normalizedRole === 'sponsor') {
+      const apps: any[] = await this.prisma.client.$queryRaw`
+        SELECT COUNT(*)::int as count 
+        FROM "OpportunityApplication" a 
+        JOIN "Opportunity" o ON a."opportunityId" = o.id
+        WHERE o."sponsorId" = ${id} AND a.status = 'PENDING'::"ApplicationStatus"
+      `;
+      count += (apps[0]?.count || 0);
+    }
+
+    return count;
+  }
 }

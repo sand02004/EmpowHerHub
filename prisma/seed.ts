@@ -82,13 +82,13 @@ async function main() {
     { organizationName: 'Women In Tech Foundation', description: 'A global foundation aiming to radically bridge the gender gap in technological ecosystems.', industry: 'Non-Profit / Education' }
   );
 
-  console.log('✅ Database Seeding Complete! Roles created exactly as requested.');
+  console.log('Database Seeding Complete! Roles created exactly as requested.');
   console.log(`Universal Test Login Password: ${plainPassword}`);
 }
 
 main()
   .catch((e) => {
-    console.error('❌ SEEDING ERROR:');
+    console.error('SEEDING ERROR:');
     console.error(e);
     process.exit(1);
   })

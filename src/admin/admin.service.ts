@@ -7,12 +7,12 @@ export class AdminService {
 
   async getPendingAccounts() {
     const users: any[] = await this.prisma.client.$queryRaw`
-      SELECT id, email, "firstName", "lastName", role, "createdAt"
+      SELECT id, email, "firstName", "lastName", role, "accountStatus", "createdAt"
       FROM "User"
-      WHERE "accountStatus" = 'PENDING'::"AccountStatus"
+      WHERE "accountStatus" = 'PENDING'::"AccountStatus" OR "accountStatus" = 'IN_REVIEW'::"AccountStatus"
       ORDER BY "createdAt" DESC
     `;
-    return users.map(u => ({ ...u, status: 'PENDING' }));
+    return users.map(u => ({ ...u, status: u.accountStatus }));
   }
 
   async updateAccountStatus(userId: string, status: string) {
