@@ -24,13 +24,13 @@ export class UploadsController {
     }
   })
   @UseInterceptors(FileInterceptor('file', {
-    storage: diskStorage({
+    storage: (process.env.VERCEL ? require('multer').memoryStorage() : diskStorage({
       destination: './uploads',
       filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
         cb(null, `${uniqueSuffix}${extname(file.originalname)}`);
       }
-    })
+    })) as any
   }))
   async uploadFile(
     @UploadedFile() file: Express.Multer.File,
