@@ -22,6 +22,12 @@ export class OpportunitiesController {
     return this.opportunitiesService.findAll();
   }
 
+  @ApiOperation({ summary: 'Get opportunities by sponsor' })
+  @Get('sponsor/:sponsorId')
+  findBySponsor(@Param('sponsorId') sponsorId: string) {
+    return this.opportunitiesService.findBySponsor(sponsorId);
+  }
+
   @ApiOperation({ summary: 'Get a specific opportunity' })
   @Get(':id')
   findOne(@Param('id') id: string) {
@@ -45,6 +51,12 @@ export class OpportunitiesController {
   @Get('user-applications/:userId')
   getUserApplications(@Param('userId') userId: string) {
     return this.opportunitiesService.getUserApplications(userId);
+  }
+
+  @ApiOperation({ summary: 'Get all applications for a sponsor' })
+  @Get('sponsor/:sponsorId/applications')
+  getSponsorApplications(@Param('sponsorId') sponsorId: string) {
+    return this.opportunitiesService.getSponsorApplications(sponsorId);
   }
 
   @ApiOperation({ summary: 'Update application status (ACCEPT/REJECT)' })

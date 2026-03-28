@@ -3,7 +3,20 @@ import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { Role, AccountStatus } from '@prisma/client';
+// Temporarily defining enums locally to bypass missing Prisma generation
+export enum Role {
+  WOMAN = 'WOMAN',
+  MENTOR = 'MENTOR',
+  SPONSOR = 'SPONSOR',
+  ADMIN = 'ADMIN',
+}
+
+export enum AccountStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  IN_REVIEW = 'IN_REVIEW',
+}
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 
 @ApiTags('admin')

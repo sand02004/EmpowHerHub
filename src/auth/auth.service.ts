@@ -3,7 +3,6 @@ import { UsersService } from '../users/users.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { Role } from '@prisma/client';
 import { RegisterWomanDto, RegisterMentorDto, RegisterSponsorDto } from './auth.dto';
 
 @Injectable()
@@ -24,89 +23,73 @@ export class AuthService {
   }
 
   private async generateAuthResponse(user: any) {
+    const role = user.role.toLowerCase();
     let passedAssessment = true;
-    if (user.role === Role.WOMAN) {
-      const passedTest = await this.prisma.client.userTest.findFirst({
-        where: { userId: user.id, passed: true }
-      });
-      passedAssessment = !!passedTest;
+
+    if (user.role === 'WOMAN') {
+      const rows: any[] = await this.prisma.client.$queryRaw`
+        SELECT id FROM "UserTest" WHERE "userId" = ${user.id} AND passed = true LIMIT 1
+      `;
+      passedAssessment = rows.length > 0;
     }
 
-    const payload = { sub: user.id, email: user.email, role: user.role, status: user.accountStatus, assessmentPassed: passedAssessment };
+    const payload = { sub: user.id, email: user.email, role, status: user.accountStatus || 'PENDING', assessmentPassed: passedAssessment, dashboardPath: `/dashboard/${role}` };
     return {
       access_token: await this.jwtService.signAsync(payload),
-      user: { id: user.id, email: user.email, role: user.role, firstName: user.firstName, status: user.accountStatus, assessmentPassed: passedAssessment }
+      user: { id: user.id, email: user.email, role, firstName: user.firstName, status: user.accountStatus || 'PENDING', assessmentPassed: passedAssessment, dashboardPath: `/dashboard/${role}` }
     };
   }
 
   async registerWoman(data: RegisterWomanDto) {
     await this.ensureUniqueEmail(data.email);
     const passwordHash = await this.hashPassword(data.passwordHash);
-
-    const user = await this.prisma.client.user.create({
-      data: {
-        email: data.email,
-        passwordHash,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        phoneNumber: data.phoneNumber,
-        role: Role.WOMAN,
-        womenProfile: {
-          create: {
-            skills: data.skills,
-          }
-        }
-      }
+    const user = await this.usersService.createUser({
+      email: data.email,
+      passwordHash,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      role: 'WOMAN',
     });
-
     return this.generateAuthResponse(user);
   }
 
   async registerMentor(data: RegisterMentorDto) {
     await this.ensureUniqueEmail(data.email);
     const passwordHash = await this.hashPassword(data.passwordHash);
-
-    const user = await this.prisma.client.user.create({
-      data: {
-        email: data.email,
-        passwordHash,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        phoneNumber: data.phoneNumber,
-        role: Role.MENTOR,
-        mentorProfile: {
-          create: {
-            professionalBackground: data.professionalBackground,
-            yearsExperience: data.yearsExperience,
-          }
-        }
-      }
+    const user = await this.usersService.createUser({
+      email: data.email,
+      passwordHash,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      role: 'MENTOR',
     });
-
+    // Set mentor-specific data
+    await this.prisma.client.$executeRaw`
+      UPDATE "MentorProfile" SET
+        "professionalBackground" = ${data.professionalBackground ?? null},
+        "yearsExperience" = ${data.yearsExperience ?? 0}
+      WHERE "userId" = ${user.id}
+    `;
     return this.generateAuthResponse(user);
   }
 
   async registerSponsor(data: RegisterSponsorDto) {
     await this.ensureUniqueEmail(data.email);
     const passwordHash = await this.hashPassword(data.passwordHash);
-
-    const user = await this.prisma.client.user.create({
-      data: {
-        email: data.email,
-        passwordHash,
-        firstName: 'Sponsor',
-        lastName: 'Rep',
-        role: Role.SPONSOR,
-        sponsorProfile: {
-          create: {
-            organizationName: data.organizationName,
-            description: data.description,
-            website: data.website,
-          }
-        }
-      }
+    const user = await this.usersService.createUser({
+      email: data.email,
+      passwordHash,
+      firstName: 'Sponsor',
+      lastName: 'Rep',
+      role: 'SPONSOR',
+      organizationName: data.organizationName,
     });
-
+    await this.prisma.client.$executeRaw`
+      UPDATE "SponsorProfile" SET
+        "organizationName" = ${data.organizationName ?? 'N/A'},
+        description = ${data.description ?? null}
+      WHERE "userId" = ${user.id}
+    `;
     return this.generateAuthResponse(user);
   }
 

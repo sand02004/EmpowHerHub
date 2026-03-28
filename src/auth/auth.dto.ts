@@ -20,11 +20,6 @@ export class BaseRegisterDto {
   @IsString()
   @IsNotEmpty()
   lastName: string;
-
-  @ApiProperty({ example: '+250791164161', required: false })
-  @IsString()
-  @IsOptional()
-  phoneNumber?: string;
 }
 
 export class RegisterWomanDto extends BaseRegisterDto {

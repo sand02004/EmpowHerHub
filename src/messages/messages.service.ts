@@ -7,75 +7,101 @@ export class MessagesService {
   constructor(private prisma: PrismaService) {}
 
   async getConversations(userId: string) {
-    return this.prisma.client.conversation.findMany({
-      where: {
-        OR: [
-          { user1Id: userId },
-          { user2Id: userId }
-        ]
-      },
-      include: {
-        user1: { select: { id: true, firstName: true, lastName: true, role: true } },
-        user2: { select: { id: true, firstName: true, lastName: true, role: true } },
-        messages: {
-          orderBy: { createdAt: 'desc' },
-          take: 1
-        }
-      },
-      orderBy: { updatedAt: 'desc' }
-    });
+    const rows: any[] = await this.prisma.client.$queryRaw`
+      SELECT 
+        c.id, c."user1Id", c."user2Id", c."createdAt", c."updatedAt",
+        u1.id as "u1_id", u1."firstName" as "u1_firstName", u1."lastName" as "u1_lastName", u1.role as "u1_role",
+        u2.id as "u2_id", u2."firstName" as "u2_firstName", u2."lastName" as "u2_lastName", u2.role as "u2_role",
+        (SELECT m.content FROM "Message" m WHERE m."conversationId" = c.id ORDER BY m."createdAt" DESC LIMIT 1) as "lastMessage",
+        (SELECT m."createdAt" FROM "Message" m WHERE m."conversationId" = c.id ORDER BY m."createdAt" DESC LIMIT 1) as "lastMessageTime"
+      FROM "Conversation" c
+      JOIN "User" u1 ON c."user1Id" = u1.id
+      JOIN "User" u2 ON c."user2Id" = u2.id
+      WHERE c."user1Id" = ${userId} OR c."user2Id" = ${userId}
+      ORDER BY c."updatedAt" DESC
+    `;
+
+    return rows.map(r => ({
+      id: r.id,
+      user1Id: r.user1Id,
+      user2Id: r.user2Id,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+      user1: { id: r.u1_id, firstName: r.u1_firstName, lastName: r.u1_lastName, role: r.u1_role },
+      user2: { id: r.u2_id, firstName: r.u2_firstName, lastName: r.u2_lastName, role: r.u2_role },
+      lastMessage: r.lastMessage,
+      lastMessageTime: r.lastMessageTime,
+    }));
   }
 
   async getMessages(conversationId: string, userId: string) {
-    const conversation = await this.prisma.client.conversation.findUnique({
-      where: { id: conversationId }
-    });
+    const convRows: any[] = await this.prisma.client.$queryRaw`
+      SELECT * FROM "Conversation" WHERE id = ${conversationId}
+    `;
 
-    if (!conversation || (conversation.user1Id !== userId && conversation.user2Id !== userId)) {
+    if (!convRows.length) throw new NotFoundException('Conversation not found');
+    const conv = convRows[0];
+    if (conv.user1Id !== userId && conv.user2Id !== userId) {
       throw new NotFoundException('Conversation not found');
     }
 
-    return this.prisma.client.message.findMany({
-      where: { conversationId },
-      orderBy: { createdAt: 'asc' },
-      include: {
-        sender: { select: { id: true, firstName: true, lastName: true, role: true } }
-      }
-    });
+    const messages: any[] = await this.prisma.client.$queryRaw`
+      SELECT m.*, u.id as "senderId", u."firstName" as "senderFirstName", u."lastName" as "senderLastName", u.role as "senderRole"
+      FROM "Message" m
+      JOIN "User" u ON m."senderId" = u.id
+      WHERE m."conversationId" = ${conversationId}
+      ORDER BY m."createdAt" ASC
+    `;
+
+    return messages.map(m => ({
+      ...m,
+      sender: { id: m.senderId, firstName: m.senderFirstName, lastName: m.senderLastName, role: m.senderRole }
+    }));
   }
 
   async sendMessage(senderId: string, dto: SendMessageDto) {
-    // Determine user1 and user2 so the unique constraint works consistently (sort by ID)
     const [user1Id, user2Id] = [senderId, dto.receiverId].sort();
 
-    let conversation = await this.prisma.client.conversation.findUnique({
-      where: {
-        user1Id_user2Id: { user1Id, user2Id }
-      }
-    });
+    // Find or create conversation
+    let convRows: any[] = await this.prisma.client.$queryRaw`
+      SELECT * FROM "Conversation" WHERE "user1Id" = ${user1Id} AND "user2Id" = ${user2Id}
+    `;
 
-    if (!conversation) {
-      conversation = await this.prisma.client.conversation.create({
-        data: { user1Id, user2Id }
-      });
+    let conversationId: string;
+
+    if (!convRows.length) {
+      const newId = crypto.randomUUID();
+      await this.prisma.client.$executeRaw`
+        INSERT INTO "Conversation" (id, "user1Id", "user2Id", "createdAt", "updatedAt")
+        VALUES (${newId}, ${user1Id}, ${user2Id}, NOW(), NOW())
+        ON CONFLICT DO NOTHING
+      `;
+      conversationId = newId;
+    } else {
+      conversationId = convRows[0].id;
     }
 
-    const message = await this.prisma.client.message.create({
-      data: {
-        conversationId: conversation.id,
-        senderId,
-        content: dto.content
-      },
-      include: {
-        sender: { select: { id: true, firstName: true, lastName: true, role: true } }
-      }
-    });
+    const msgId = crypto.randomUUID();
+    await this.prisma.client.$executeRaw`
+      INSERT INTO "Message" (id, "conversationId", "senderId", content, "isRead", "createdAt")
+      VALUES (${msgId}, ${conversationId}, ${senderId}, ${dto.content}, false, NOW())
+    `;
 
-    await this.prisma.client.conversation.update({
-      where: { id: conversation.id },
-      data: { updatedAt: new Date() }
-    });
+    await this.prisma.client.$executeRaw`
+      UPDATE "Conversation" SET "updatedAt" = NOW() WHERE id = ${conversationId}
+    `;
 
-    return message;
+    const msgRows: any[] = await this.prisma.client.$queryRaw`
+      SELECT m.*, u.id as "senderId", u."firstName" as "senderFirstName", u."lastName" as "senderLastName", u.role as "senderRole"
+      FROM "Message" m
+      JOIN "User" u ON m."senderId" = u.id
+      WHERE m.id = ${msgId}
+    `;
+
+    const m = msgRows[0];
+    return {
+      ...m,
+      sender: { id: m.senderId, firstName: m.senderFirstName, lastName: m.senderLastName, role: m.senderRole }
+    };
   }
 }

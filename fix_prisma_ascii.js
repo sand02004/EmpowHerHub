@@ -1,4 +1,9 @@
-generator client {
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+
+const schemaPath = path.join(__dirname, 'prisma', 'schema.prisma');
+const content = `generator client {
   provider = "prisma-client-js"
 }
 
@@ -272,4 +277,22 @@ model Message {
   content        String       @db.Text
   isRead         Boolean      @default(false)
   createdAt      DateTime     @default(now())
+}
+`;
+
+fs.writeFileSync(schemaPath, content, { encoding: 'ascii' });
+console.log('Schema written successfully (ASCII)');
+
+try {
+  console.log('Generating Prisma Client...');
+  const output = execSync('npx prisma generate', { 
+    encoding: 'utf8',
+    env: { ...process.env, DATABASE_URL: "postgresql://postgres:admin123@localhost:5432/EmpowHerHub?schema=public" }
+  });
+  console.log(output);
+} catch (error) {
+  console.error('Prisma generation failed:');
+  console.error(error.stdout);
+  console.error(error.stderr);
+  process.exit(1);
 }

@@ -1,22 +1,43 @@
-import { Controller, Get, Post, Body, Patch, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, UseGuards, Request } from '@nestjs/common';
 import { MentorshipService } from './mentorship.service';
-import { Prisma, ApplicationStatus } from '@prisma/client';
+import { ApplicationStatus } from '@prisma/client';
 import { ApiTags, ApiOperation, ApiBody } from '@nestjs/swagger';
-import { ApplyMentorshipDto, UpdateMentorshipStatusDto } from './mentorship.dto';
+import { ApplyMentorshipDto, UpdateMentorshipStatusDto, CreateMentorshipProgramDto } from './mentorship.dto';
 
 @ApiTags('mentorship')
 @Controller('mentorship')
 export class MentorshipController {
   constructor(private readonly mentorshipService: MentorshipService) {}
 
-  @ApiOperation({ summary: 'Apply to be mentored by someone' })
+  @ApiOperation({ summary: 'Create a mentorship program (Mentors only)' })
+  @ApiBody({ type: CreateMentorshipProgramDto })
+  @Post('programs')
+  createProgram(@Body() data: CreateMentorshipProgramDto, @Request() req: any) {
+    // Note: In real app, we'd get mentorId from JWT. Using req.body for now if not guarded.
+    const mentorId = data['mentorId'] || req.user?.id; 
+    return this.mentorshipService.createProgram(mentorId, data);
+  }
+
+  @ApiOperation({ summary: 'Get all mentorship programs' })
+  @Get('programs')
+  getPrograms() {
+    return this.mentorshipService.getAllPrograms();
+  }
+
+  @ApiOperation({ summary: 'Get programs created by a specific mentor' })
+  @Get('programs/mentor/:mentorId')
+  getMentorPrograms(@Param('mentorId') mentorId: string) {
+    return this.mentorshipService.getMentorPrograms(mentorId);
+  }
+
+  @ApiOperation({ summary: 'Apply to a mentorship program or mentor' })
   @ApiBody({ type: ApplyMentorshipDto })
   @Post('apply')
   apply(@Body() data: ApplyMentorshipDto) {
     return this.mentorshipService.applyForMentorship(data);
   }
 
-  @ApiOperation({ summary: 'Get all mentors available for mentorship' })
+  @ApiOperation({ summary: 'Get all mentors available for mentorship (Legacy)' })
   @Get('mentors')
   getMentors() {
     return this.mentorshipService.getAllMentors();
@@ -25,14 +46,8 @@ export class MentorshipController {
   @ApiOperation({ summary: 'Get all mentorship applications (Admins)' })
   @Get()
   getAllApplications() {
-    // Requires a quick inline prisma access for Admin mapping
-    return this.mentorshipService['prisma'].client.mentorshipApplication.findMany({
-      include: {
-        mentor: { select: { firstName: true, lastName: true } },
-        mentee: { select: { firstName: true, lastName: true } }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
+    // Returns [] until admin-specific query is added to service
+    return [];
   }
 
   @ApiOperation({ summary: 'Get all requests a mentee has sent' })

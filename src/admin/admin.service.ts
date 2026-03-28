@@ -1,34 +1,32 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { AccountStatus } from '@prisma/client';
 
 @Injectable()
 export class AdminService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getPendingAccounts() {
-    return this.prisma.client.user.findMany({
-      where: {
-        accountStatus: { in: [AccountStatus.PENDING, AccountStatus.IN_REVIEW] }
-      },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        createdAt: true,
-      }
-    });
+    const users: any[] = await this.prisma.client.$queryRaw`
+      SELECT id, email, "firstName", "lastName", role, "createdAt"
+      FROM "User"
+      WHERE "accountStatus" = 'PENDING'::"AccountStatus"
+      ORDER BY "createdAt" DESC
+    `;
+    return users.map(u => ({ ...u, status: 'PENDING' }));
   }
 
-  async updateAccountStatus(userId: string, status: AccountStatus) {
-    const user = await this.prisma.client.user.findUnique({ where: { id: userId } });
-    if (!user) throw new NotFoundException('User not found');
+  async updateAccountStatus(userId: string, status: string) {
+    const rows: any[] = await this.prisma.client.$queryRaw`
+      SELECT id FROM "User" WHERE id = ${userId}
+    `;
+    if (!rows.length) throw new NotFoundException('User not found');
 
-    return this.prisma.client.user.update({
-      where: { id: userId },
-      data: { accountStatus: status }
-    });
+    await this.prisma.client.$executeRaw`
+      UPDATE "User" SET "accountStatus" = ${status}::"AccountStatus", "updatedAt" = NOW() WHERE id = ${userId}
+    `;
+    const updated: any[] = await this.prisma.client.$queryRaw`
+      SELECT * FROM "User" WHERE id = ${userId}
+    `;
+    return updated[0];
   }
 }
