@@ -1,98 +1,104 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
-
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
-
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+# EmpowHerHub
 
 ## Description
+EmpowHerHub is a mission-driven, full-stack platform designed to safely and effectively connect Women in Tech with Mentors and Corporate Sponsors. The system streamlines the professional growth journey through a robust role-based dashboard, multi-step profile verification, skill assessments, and opportunity tracking.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Key features include:
+- **Role-Based Access Control**: Different experiences for Women, Mentors, Sponsors, and Admins.
+- **Profile Verification**: A secure onboarding process for all participants.
+- **Opportunites Hub**: Mentors and Sponsors can post and manage jobs, funding, and mentorship openings.
+- **Skills Assessment**: Integrated testing to validate expertise.
+- **Real-Time Dashboards**: Personalized views for tracking progress and applications.
 
-## Project setup
+## Technologies Used
+- **Backend**: NestJS, TypeScript, JWT (Authentication), Swagger (API Documentation).
+- **Frontend**: React (Vite), TypeScript, Tailwind CSS, Lucide Icons.
+- **Database**: PostgreSQL (Neon/Cloud-ready), Prisma (Schema management & migrations).
+- **Performance**: Raw SQL query execution with `pg` for high-performance data operations.
 
+---
+
+## Setup Instructions
+
+Follow these steps precisely to get your local development environment running.
+
+### 1. Clone the repository
+First, clone the project from GitHub and navigate into the root directory:
 ```bash
-$ npm install
+git clone https://github.com/your-username/EmpowHerHub.git
+cd EmpowHerHub
 ```
 
-## Compile and run the project
+### 2. Setup the Backend (empowher-backend)
 
-```bash
-# development
-$ npm run start
+1.  **Navigate and Install Dependencies**:
+    ```bash
+    cd empowher-backend
+    npm install
+    ```
 
-# watch mode
-$ npm run start:dev
+2.  **Configure Environment Variables**:
+    Create a file named `.env` in the `empowher-backend` folder and add the following (update with your database credentials):
+    ```env
+    PORT=3000
+    DATABASE_URL="postgresql://user:password@localhost:5432/empowherdb?sslmode=require"
+    JWT_SECRET="your_secure_random_secret_key"
+    ```
 
-# production mode
-$ npm run start:prod
-```
+3.  **Sync Database Schema**:
+    Ensure your PostgreSQL database is running, then sync the schema using Prisma:
+    ```bash
+    npx prisma db push
+    ```
 
-## Run tests
+4.  **Seed the Database**:
+    Initialize the database with the default administrator account and sample data:
+    ```bash
+    npx ts-node prisma/seed.ts
+    ```
 
-```bash
-# unit tests
-$ npm run test
+5.  **Start the Backend**:
+    ```bash
+    npm run start:dev
+    ```
+    *The API will be available at [http://localhost:3000/api/v1](http://localhost:3000/api/v1) and the Swagger docs at [http://localhost:3000/api](http://localhost:3000/api).*
 
-# e2e tests
-$ npm run test:e2e
+### 3. Setup the Frontend (empowher-frontend)
 
-# test coverage
-$ npm run test:cov
-```
+1.  **Navigate and Install Dependencies**:
+    Open a **new terminal tab**, navigate to the frontend folder, and install:
+    ```bash
+    cd ../empowher-frontend
+    npm install
+    ```
 
-## Deployment
+2.  **Configure Environment Variables**:
+    Create a file named `.env` in the `empowher-frontend` folder:
+    ```env
+    VITE_API_URL="http://localhost:3000/api/v1"
+    ```
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+3.  **Start the Frontend**:
+    ```bash
+    npm run dev
+    ```
+    *The application will be accessible at [http://localhost:5173](http://localhost:5173).*
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+---
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
+## Default Administrator Account
+Once you have seeded the database, you can log in as an administrator to oversee users and approve profiles:
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+- **Email**: `admin@empowher.com`
+- **Password**: `password123`
 
-## Resources
+---
 
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## 👥 Platform Roles & Flow
+1.  **Women**: Register → Complete Profile → Take Assessment → Admin Approval → Access Opportunities.
+2.  **Mentors**: Register → Expertise Setup → Admin Approval → Mentor Women.
+3.  **Sponsors**: Register → Post Job/Funding Opportunities → Candidate Review.
+4.  **Admins**: Full platform oversight, profile verification, and data management.
 
 ## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+MIT License
